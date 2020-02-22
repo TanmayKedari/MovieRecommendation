@@ -1,0 +1,50 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Scanner;
+
+public class hivejdbc {
+	public static final String DB_DRIVER = "org.apache.hive.jdbc.HiveDriver";
+	public static final String DB_URL = "{database_url}";
+	public static final String DB_USER = "{database_name}";
+	public static final String DB_PASSWORD = "";
+
+	static {
+		try {
+			// 1. load & register driver class
+			Class.forName(DB_DRIVER);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public static void main(String[] args) {
+		int movieid;
+		Scanner sc = new Scanner(System.in);
+		System.out.println("ENTER Movie Id:");
+		movieid = sc.nextInt();
+		// 2. create jdbc connection
+		try(Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+			// 3. create statement
+			String sql = "select m.title from movies2 m "
+					+ "inner join correlation c on m.id in (c.m1,c.m2)"
+					+ " where ? in (c.m1,c.m2 ) AND c > 0.5 AND cnt > 40 AND m.title != (SELECT title FROM movies2 WHERE id = ?)";
+			try(PreparedStatement stmt = con.prepareStatement(sql)) {
+				stmt.setInt(1, movieid);
+				stmt.setInt(2, movieid);
+				// 4. execute query and process results
+				try(ResultSet rs = stmt.executeQuery()) {
+					while(rs.next()) {
+						String mv = rs.getString(1);
+						System.out.println(mv);
+					}
+				} // 5. rs close
+			} // 5. stmt close
+		} // 5. con close
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		sc.close();
+	}	
+
+	}
